@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResQ - Offline Disaster Response System</title>
+    <meta name="description" content="Offline disaster response chatbot, emergency contacts, shelter locator, first aid guides, and SOS beacon generator.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="theme-light">
+    <div class="login-page" id="login-page">
+        <div class="login-card login-card-centered">
+            <button type="button" class="login-close-btn" id="login-close-btn" title="Close login page">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="login-header">
+                <h2><i class="fa-solid fa-user-lock"></i> ResQ Login</h2>
+                <p>Select a role and your account to unlock the preparedness dashboard.</p>
+            </div>
+            <div id="login-status" class="login-status"></div>
+            <div class="login-role-toggle" id="login-role-toggle">
+                <button type="button" class="login-role-btn active" data-role="student">Student</button>
+                <button type="button" class="login-role-btn" data-role="teacher">Teacher</button>
+                <button type="button" class="login-role-btn" data-role="institution">Institution</button>
+            </div>
+            <div class="login-form">
+                <label for="login-email">Email Address</label>
+                <input id="login-email" type="email" placeholder="Enter email" autocomplete="username">
+                <label for="login-password">Password</label>
+                <input id="login-password" type="password" placeholder="Enter password" autocomplete="current-password">
+                <p class="login-help-text">Seeded accounts available: studenta@nddpa.edu.in / StudentA@123, studentb@nddpa.edu.in / StudentB@123, studentc@dps15.edu.in / StudentC@123, ananya.singh@nddpa.edu.in / Ananya@123, priya.sharma@dps15.edu.in / Priya@456.</p>
+                <div class="login-actions">
+                    <button type="button" class="action-btn" id="login-button"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+                    <button type="button" class="secondary-btn" id="guest-button">Continue as demo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-app" class="main-app hidden">
+    <!-- Top Header -->
+    <header class="app-header">
+        <div class="header-brand">
+            <div class="brand-logo">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="brand-text">
+                <h1>ResQ <span>Offline</span></h1>
+                <p>Disaster Response System</p>
+            </div>
+        </div>
+
+        <div class="header-status">
+            <div class="status-indicator" id="network-status" title="Server Connection Health">
+                <span class="status-dot online"></span>
+                <span class="status-text">System Ready</span>
+            </div>
+            <div class="user-profile" id="user-profile">
+                <span class="user-role-badge" id="user-role-display">Guest</span>
+                <span class="user-name" id="user-name-display">Please login</span>
+                <button class="logout-btn" id="logout-button" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+            <button class="sos-trigger-btn" id="header-sos-btn" onclick="app.switchTab('sos')">
+                <i class="fa-solid fa-tower-broadcast"></i> SOS BEACON
+            </button>
+            <button class="theme-toggle-btn" id="theme-toggle" title="Toggle light / dark theme">
+                <i class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="app-nav">
+                <button class="nav-item" data-tab="student" onclick="app.switchTab('student')">
+                <i class="fa-solid fa-user-graduate"></i>
+                <span>Student Dashboard</span>
+            </button>
+            <button class="nav-item" data-tab="teacher" onclick="app.switchTab('teacher')">
+                <i class="fa-solid fa-chalkboard-teacher"></i>
+                <span>Teacher Dashboard</span>
+            </button>
+            <button class="nav-item" data-tab="institution" onclick="app.switchTab('institution')">
+                <i class="fa-solid fa-school"></i>
+                <span>Institution Dashboard</span>
+            </button>
+            <button class="nav-item active" data-tab="chat" onclick="app.switchTab('chat')">
+                <i class="fa-solid fa-robot"></i>
+                <span>AI Assistant</span>
+            </button>
+            <button class="nav-item" data-tab="disasters" onclick="app.switchTab('disasters')">
+                <i class="fa-solid fa-earth-americas"></i>
+                <span>Explore Disasters</span>
+            </button>
+            <button class="nav-item" data-tab="shelter" onclick="app.switchTab('shelter')">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span>Shelters</span>
+            </button>
+            <button class="nav-item" data-tab="firstaid" onclick="app.switchTab('firstaid')">
+                <i class="fa-solid fa-kit-medical"></i>
+                <span>First Aid</span>
+            </button>
+            <button class="nav-item" data-tab="contacts" onclick="app.switchTab('contacts')">
+                <i class="fa-solid fa-phone-volume"></i>
+                <span>Contacts</span>
+            </button>
+            <button class="nav-item sos-nav" data-tab="sos" onclick="app.switchTab('sos')">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>SOS Beacon</span>
+            </button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="app-content">
+
+            <!-- TAB 1: CHATBOT -->
+            <section class="tab-panel active" id="tab-chat">
+                <div class="chat-wrapper">
+                    <!-- Chat Header Bar -->
+                    <div class="chat-header">
+                        <div class="chat-title">
+                            <h2><i class="fa-solid fa-comments"></i> Emergency Assistant</h2>
+                            <span class="model-badge"><i class="fa-solid fa-microchip"></i> Gemma / Local LLM</span>
+                        </div>
+                        <div class="category-pills" id="chat-category-pills">
+                            <button class="pill-btn active" data-category="general">General Help</button>
+                            <button class="pill-btn" data-category="first_aid">First Aid</button>
+                            <button class="pill-btn" data-category="evacuation">Evacuation</button>
+                            <button class="pill-btn" data-category="shelter">Shelter</button>
+                            <button class="pill-btn" data-category="medical">Medical Urgent</button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages Stream -->
+                    <div class="chat-stream" id="chat-messages">
+                        <div class="message bot-message">
+                            <div class="message-avatar"><i class="fa-solid fa-user-ninja"></i></div>
+                            <div class="message-content">
+                                <div class="sender-name">ResQ AI Assistant</div>
+                                <div class="message-body">
+                                    Hello! I am your <strong>Offline Emergency Response Assistant</strong>. I run directly on local hardware without requiring internet connectivity.<br><br>
+                                    How can I assist you right now? You can ask about medical first aid, shelter directions, evacuation steps, or safety guidelines.
+                                </div>
+                                <div class="message-meta">
+                                    <span class="timestamp">Just now</span>
+                                    <button class="speech-btn" title="Read message aloud" onclick="chatView.speakMessage(this)"><i class="fa-solid fa-volume-high"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input Area -->
+                    <div class="chat-input-bar">
+                        <button class="voice-btn" id="voice-input-btn" title="Hold/Click for Voice Input">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                        <input type="text" id="chat-input" placeholder="Ask for emergency aid, medical steps, or shelter guidance..." autocomplete="off">
+                        <button class="send-btn" id="chat-send-btn">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: DISASTER LIBRARY -->
+            <section class="tab-panel" id="tab-disasters">
+                <div class="disasters-wrapper">
+                    <div class="tab-top-bar">
+                        <div class="section-title">
+                            <h2><i class="fa-solid fa-earth-americas"></i> Disaster Learning & Simulation Library</h2>
+                            <p>Explore multi-hazard preparedness modules, review disaster safety summaries, and browse scenario simulations.</p>
+                        </div>
+                        <div class="disaster-search-bar">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="disaster-search" placeholder="Search hazards, modules, or scenario themes...">
+                        </div>
+                    </div>
+
+                    <div class="disasters-grid">
+                        <div class="disaster-list-card">
+                            <div class="card-header">
+                                <h3>Disaster Modules</h3>
+                                <span class="module-count-badge" id="disaster-count">0 modules</span>
+                            </div>
+                            <div class="disaster-list" id="disaster-list">
+                                <!-- populated by disasters.js -->
+                            </div>
+                        </div>
+
+                        <div class="disaster-detail-card">
+                            <div class="detail-header">
+                                <div>
+                                    <h3 id="disaster-detail-title">Select a disaster module</h3>
+                                    <p id="disaster-detail-subtitle">Choose a hazard from the left to review preparedness guidance and scenario practice.</p>
+                                </div>
+                                <div class="detail-badges" id="disaster-detail-tags"></div>
+                            </div>
+
+                            <div class="disaster-overview" id="disaster-detail-overview">
+                                <div class="detail-section">
+                                    <h4>Why this matters</h4>
+                                    <p id="detail-summary">Select a disaster module to see the overview.</p>
+                                </div>
+                                <div class="detail-section two-column">
+                                    <div>
+                                        <h4>Before</h4>
+                                        <p id="detail-before">Preparation guidance will appear here.</p>
+                                    </div>
+                                    <div>
+                                        <h4>During</h4>
+                                        <p id="detail-during">Response guidance will appear here.</p>
+                                    </div>
+                                </div>
+                                <div class="detail-section">
+                                    <h4>After</h4>
+                                    <p id="detail-after">Recovery and resilience guidance will appear here.</p>
+                                </div>
+                                <div class="detail-section">
+                                    <h4>Source references</h4>
+                                    <p id="detail-sources" class="text-muted">Source citations are shown here for safety and accuracy.</p>
+                                </div>
+                            </div>
+
+                            <div class="scenario-section">
+                                <div class="scenario-header">
+                                    <h4>Scenario Practice</h4>
+                                    <p>Review available simulations for this hazard and explore decision-based learning.</p>
+                                </div>
+                                <div class="scenario-list" id="scenario-list">
+                                    <!-- scenario cards inserted here -->
+                                </div>
+                                <div class="scenario-detail-panel" id="scenario-detail-panel">
+                                    <h4>Scenario details</h4>
+                                    <div id="scenario-detail-content">
+                                        <p>Select a scenario to view its stages, decisions, and scoring guidance.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="quiz-panel-card" id="disaster-quiz-panel">
+                                <div class="quiz-placeholder">
+                                    <p>Select a disaster module to unlock the knowledge quiz and earn XP.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: SHELTERS & MAP -->
+            <section class="tab-panel" id="tab-shelter">
+                <div class="shelter-wrapper">
+                    <!-- Map & List Split Grid -->
+                    <div class="shelter-grid">
+                        <!-- Left Panel: Interactive Map -->
+                        <div class="map-container-card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-map-location-dot"></i> Interactive Offline Map</h3>
+                                <button class="locate-me-btn" id="locate-btn"><i class="fa-solid fa-crosshairs"></i> My Location</button>
+                            </div>
+                            <div id="leaflet-map" class="map-view"></div>
+                        </div>
+
+                        <!-- Right Panel: Shelter List -->
+                        <div class="shelter-list-card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-house-chimney-medical"></i> Nearby Refuge Centers</h3>
+                                <span class="shelter-count-badge" id="shelter-count">0 Shelters</span>
+                            </div>
+                            <div class="search-filter-box">
+                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                <input type="text" id="shelter-search" placeholder="Search shelters or amenities...">
+                            </div>
+                            <div class="shelter-cards-list" id="shelter-list">
+                                <!-- Dynamically populated by map.js -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: FIRST AID GUIDES -->
+            <section class="tab-panel" id="tab-firstaid">
+                <div class="firstaid-wrapper">
+                    <div class="panel-top-bar">
+                        <div class="section-title">
+                            <h2><i class="fa-solid fa-kit-medical"></i> Medical & Emergency First Aid</h2>
+                            <p>Step-by-step procedures for life-saving care when medical services are delayed.</p>
+                        </div>
+                        <div class="firstaid-search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="firstaid-search" placeholder="Search procedure (e.g. CPR, Burn, Bleeding)...">
+                        </div>
+                    </div>
+
+                    <div class="firstaid-categories" id="firstaid-categories">
+                        <button class="cat-chip active" data-cat="all">All Procedures</button>
+                        <button class="cat-chip" data-cat="Life-Saving">Life-Saving</button>
+                        <button class="cat-chip" data-cat="Trauma">Trauma & Wounds</button>
+                        <button class="cat-chip" data-cat="Burns">Burns</button>
+                        <button class="cat-chip" data-cat="Sanitation">Sanitation</button>
+                    </div>
+
+                    <div class="firstaid-grid" id="firstaid-cards">
+                        <!-- Dynamically populated by firstaid.js -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: STUDENT PORTAL -->
+            <section class="tab-panel" id="tab-student">
+                <div class="student-wrapper">
+                    <div class="portal-header">
+                        <div>
+                            <h2><i class="fa-solid fa-user-graduate"></i> Student Dashboard</h2>
+                            <p>Track your readiness score, learning path, missions, and emergency preparedness plan.</p>
+                        </div>
+                        <div class="portal-actions">
+                            <button class="action-btn secondary" id="student-reset-xp-btn"><i class="fa-solid fa-rotate-left"></i> Reset XP</button>
+                            <button class="action-btn" id="student-refresh-btn"><i class="fa-solid fa-arrow-rotate-right"></i> Refresh Progress</button>
+                        </div>
+                    </div>
+                    <div class="dashboard-summary-grid">
+                        <div class="summary-card">
+                            <h3>Overall Readiness</h3>
+                            <strong id="student-readiness-score">58/100</strong>
+                            <p>Your current preparedness score across disaster awareness and simulation training.</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Weakest Area</h3>
+                            <strong id="student-weak-area">Flood preparedness</strong>
+                            <p>The AI recommends priority training to improve this skill.</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Next Recommended Path</h3>
+                            <strong id="student-next-path">Flood Preparedness → Simulation → Assessment</strong>
+                            <p>Follow the suggested learning path to raise your score quickly.</p>
+                        </div>
+                    </div>
+                    <div class="game-summary-grid">
+                        <div class="summary-card">
+                            <h3>Experience Points</h3>
+                            <strong id="student-xp-score">420 XP</strong>
+                            <p>Earn XP by completing drills, quizzes, and preparedness missions.</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Leader Rank</h3>
+                            <strong id="student-rank">#2</strong>
+                            <p>Your current position among all active students.</p>
+                        </div>
+                    </div>
+                    <div class="student-card full-width-card">
+                        <h3>Class Leaderboard</h3>
+                        <div class="leaderboard-list" id="student-leaderboard"></div>
+                    </div>
+
+                    <div class="student-grid">
+                        <div class="student-card">
+                            <h3>Learning Progress</h3>
+                            <div class="progress-list" id="student-learning-path"></div>
+                        </div>
+                        <div class="student-card">
+                            <h3>Badges & Achievements</h3>
+                            <div class="badge-list" id="student-badges"></div>
+                        </div>
+                        <div class="student-card full-width-card">
+                            <h3>Recent Assessments</h3>
+                            <div class="assessment-list" id="student-assessments"></div>
+                        </div>
+                        <div class="student-card full-width-card">
+                            <h3>Scenario Progress</h3>
+                            <div class="progress-records" id="student-progress-records"></div>
+                        </div>
+                        <div class="student-card full-width-card">
+                            <h3>XP Progress & Challenges</h3>
+                            <div class="xp-progress-card">
+                                <div class="xp-level-block">
+                                    <span>Current Level</span>
+                                    <strong id="student-level">4</strong>
+                                </div>
+                                <div class="xp-progress-bar">
+                                    <div class="xp-progress-fill" id="student-xp-progress-fill" style="width: 84%"></div>
+                                </div>
+                                <div class="xp-progress-meta">
+                                    <span id="student-next-milestone">80 XP to next level</span>
+                                    <span id="student-total-xp">420 XP total</span>
+                                    <span id="student-xp-bonus" class="xp-bonus-text"></span>
+                                </div>
+                                <div class="quiz-completion-bar">
+                                    <div class="quiz-completion-label">
+                                        <span>Quiz Completion</span>
+                                        <strong id="student-quiz-completion-text">0/0 completed</strong>
+                                    </div>
+                                    <div class="quiz-completion-track">
+                                        <div class="quiz-completion-fill" id="student-quiz-completion-fill" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="xp-breakdown-list" id="student-xp-breakdown"></div>
+                            <div class="mission-board" id="student-mission-board"></div>
+                        </div>
+                        <div class="student-card full-width-card">
+                            <h3>Family Preparedness Plan</h3>
+                            <div class="family-plan" id="student-family-plan">
+                                <p>Create a household emergency plan with meeting points, contact info, and kit checklist.</p>
+                                <button class="action-btn small" id="student-plan-btn"><i class="fa-solid fa-house-user"></i> Build Family Plan</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: TEACHER PORTAL -->
+            <section class="tab-panel" id="tab-teacher">
+                <div class="teacher-wrapper">
+                    <div class="portal-header">
+                        <div>
+                            <h2><i class="fa-solid fa-chalkboard-teacher"></i> Teacher Portal</h2>
+                            <p>Assign modules, monitor class readiness, and mentor student preparedness.</p>
+                        </div>
+                        <button class="action-btn" id="teacher-refresh-btn"><i class="fa-solid fa-arrow-rotate-right"></i> Refresh Class Data</button>
+                    </div>
+
+                    <div class="dashboard-summary-grid">
+                        <div class="summary-card">
+                            <h3>Classes Managed</h3>
+                            <strong id="teacher-class-count">2</strong>
+                            <p>Active disaster preparedness classes and groups.</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Average Class Readiness</h3>
+                            <strong id="teacher-average-readiness">79%</strong>
+                            <p>Your class readiness score based on assignments and simulation results.</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Weak Topic</h3>
+                            <strong id="teacher-common-weakness">Evacuation decisions</strong>
+                            <p>Focus instruction on areas where students need the most improvement.</p>
+                        </div>
+                    </div>
+
+                    <div class="teacher-grid">
+                        <div class="teacher-card">
+                            <h3>Assigned Training</h3>
+                            <div class="assignment-list" id="teacher-assignments"></div>
+                        </div>
+                        <div class="teacher-card">
+                            <h3>Student Completion</h3>
+                            <div class="student-status-list" id="teacher-student-status"></div>
+                        </div>
+                        <div class="teacher-card full-width-card">
+                            <h3>Classroom Challenge</h3>
+                            <p>Configure a preparedness competition or assign a live simulation.</p>
+                            <div class="teacher-actions-row">
+                                <button class="action-btn small" id="teacher-assign-btn"><i class="fa-solid fa-trophy"></i> Assign New Module</button>
+                                <button class="action-btn secondary small" id="teacher-reset-all-xp-btn"><i class="fa-solid fa-eraser"></i> Reset All XP</button>
+                            </div>
+                        </div>
+                        <div class="teacher-card full-width-card">
+                            <div class="teacher-quiz-header">
+                                <h3>Quiz Builder</h3>
+                                <button class="action-btn small" id="teacher-add-quiz-btn"><i class="fa-solid fa-plus"></i> New Quiz</button>
+                            </div>
+                            <div class="quiz-builder" id="teacher-quiz-builder">
+                                <p class="text-muted">Create a new module quiz for students by selecting a disaster and writing questions.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: INSTITUTION PORTAL -->
+            <section class="tab-panel" id="tab-institution">
+                <div class="institution-wrapper">
+                    <div class="portal-header">
+                        <div>
+                            <h2><i class="fa-solid fa-school"></i> Institution Dashboard</h2>
+                            <p>Monitor institution-wide preparedness, department readiness, and training impact.</p>
+                        </div>
+                        <button class="action-btn" id="institution-refresh-btn"><i class="fa-solid fa-arrow-rotate-right"></i> Refresh Institution Metrics</button>
+                    </div>
+
+                    <div class="dashboard-summary-grid">
+                        <div class="summary-card">
+                            <h3>Institution Score</h3>
+                            <strong id="institution-score">83/100</strong>
+                            <p>Overall readiness for the educational institution.</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Total Students</h3>
+                            <strong id="institution-student-count">120</strong>
+                            <p>Students enrolled in disaster preparedness programs.</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Participation Rate</h3>
+                            <strong id="institution-participation">84%</strong>
+                            <p>Percentage of students actively engaged in training.</p>
+                        </div>
+                    </div>
+
+                    <div class="institution-grid">
+                        <div class="institution-card">
+                            <h3>Department Readiness</h3>
+                            <div class="department-list" id="institution-departments"></div>
+                        </div>
+                        <div class="institution-card">
+                            <h3>Reports & Recommendations</h3>
+                            <div class="report-list" id="institution-reports"></div>
+                        </div>
+                        <div class="institution-card full-width-card">
+                            <h3>Competition Leaderboard</h3>
+                            <div class="leaderboard-list" id="institution-leaderboard"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 6: EMERGENCY CONTACTS -->
+            <section class="tab-panel" id="tab-contacts">
+                <div class="contacts-wrapper">
+                    <div class="panel-top-bar">
+                        <div class="section-title">
+                            <h2><i class="fa-solid fa-phone-volume"></i> Emergency Directory</h2>
+                            <p>Direct contacts for police, hospitals, search & rescue, and relief operations.</p>
+                        </div>
+                        <div class="contacts-search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="contacts-search" placeholder="Search contacts by name or service...">
+                        </div>
+                    </div>
+
+                    <div class="contacts-categories" id="contacts-categories">
+                        <button class="cat-chip active" data-type="all">All Contacts</button>
+                        <button class="cat-chip" data-type="Police">Police</button>
+                        <button class="cat-chip" data-type="Hospital">Hospital</button>
+                        <button class="cat-chip" data-type="Rescue">Search & Rescue</button>
+                        <button class="cat-chip" data-type="Fire">Fire Dept</button>
+                        <button class="cat-chip" data-type="Relief">Relief & Food</button>
+                    </div>
+
+                    <div class="contacts-grid" id="contacts-list">
+                        <!-- Dynamically populated by contacts.js -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: SOS EMERGENCY BEACON -->
+            <section class="tab-panel" id="tab-sos">
+                <div class="sos-wrapper">
+                    <div class="sos-banner">
+                        <div class="sos-icon-pulse"><i class="fa-solid fa-circle-radiation"></i></div>
+                        <div class="sos-banner-text">
+                            <h2>Emergency SOS Distress Beacon</h2>
+                            <p>Generate precise distress signals with GPS coordinates, formatted for instant SMS transmission or radio broadcast.</p>
+                        </div>
+                    </div>
+
+                    <div class="sos-form-grid">
+                        <!-- Left: SOS Creator Form -->
+                        <div class="sos-form-card">
+                            <h3><i class="fa-solid fa-bullhorn"></i> Create Distress Message</h3>
+                            
+                            <div class="form-group">
+                                <label><i class="fa-solid fa-tags"></i> Emergency Category</label>
+                                <div class="sos-cat-selector" id="sos-category-select">
+                                    <button type="button" class="sos-cat-btn active" data-cat="medical"><i class="fa-solid fa-suitcase-medical"></i> Medical</button>
+                                    <button type="button" class="sos-cat-btn" data-cat="shelter"><i class="fa-solid fa-person-shelter"></i> Shelter</button>
+                                    <button type="button" class="sos-cat-btn" data-cat="evacuation"><i class="fa-solid fa-person-walking-arrow-right"></i> Evacuation</button>
+                                    <button type="button" class="sos-cat-btn" data-cat="general"><i class="fa-solid fa-triangle-exclamation"></i> General</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label><i class="fa-solid fa-location-dot"></i> Your Location / GPS</label>
+                                <div class="location-input-row">
+                                    <input type="text" id="sos-location-input" placeholder="Detecting GPS coordinates...">
+                                    <button type="button" class="gps-refresh-btn" id="sos-gps-btn" title="Refresh GPS position">
+                                        <i class="fa-solid fa-arrows-rotate"></i> GPS
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label><i class="fa-solid fa-message"></i> Generated SOS Broadcast Message</label>
+                                <textarea id="sos-preview-text" rows="4" readonly></textarea>
+                            </div>
+
+                            <div class="sos-actions-row">
+                                <button type="button" class="action-btn copy-btn" id="sos-copy-btn">
+                                    <i class="fa-solid fa-copy"></i> Copy SMS Text
+                                </button>
+                                <button type="button" class="action-btn submit-sos-btn" id="sos-submit-btn">
+                                    <i class="fa-solid fa-paper-plane"></i> Queue SOS Signal
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Right: Queued SOS Log -->
+                        <div class="sos-log-card">
+                            <h3><i class="fa-solid fa-clock-rotate-left"></i> SOS Queue & Dispatch History</h3>
+                            <div class="sos-history-list" id="sos-history-list">
+                                <!-- Dynamically populated by sos.js -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+    <!-- Leaflet JS for Maps -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- App Modules -->
+    <script src="js/api.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/disasters.js"></script>
+    <script src="js/portal.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/firstaid.js"></script>
+    <script src="js/contacts.js"></script>
+    <script src="js/sos.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
